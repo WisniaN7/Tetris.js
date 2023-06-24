@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "watch": true,
+        "lib": ["DOM", "esnext"],
+        "outDir": "./public/js",
+        "rootDir": "./src",
+
+        "module": "esnext",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+    }
+}
