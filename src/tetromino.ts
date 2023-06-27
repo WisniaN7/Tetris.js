@@ -4,21 +4,55 @@ abstract class Tetromino {
     protected x: number
     protected y: number
     protected blocks: Block[]
-    protected color: string
-
-    constructor(x: number, y: number, blocks: Block[], color: string) {
+    protected grid: string[][]
+    
+    constructor(x: number, y: number, blocks: Block[], grid: string[][]) {
         this.x = x
         this.y = y
         this.blocks = blocks
-        this.color = color
+        this.grid = grid
     }
+
+    get Blocks(): Block[] { return this.blocks }
     
     draw(ctx: CanvasRenderingContext2D, size: number): void {
-        ctx.fillStyle = this.color
+        const coords = this.blocks.map(block => ({ x: block.x, y: block.y }))
+        let minX = Math.min(...coords.map(coord => coord.x))
+        let maxX = Math.max(...coords.map(coord => coord.x))
+        let startY = Math.max(...coords.map(coord => coord.y))
+
+        ctx.fillStyle = 'rgba(255, 255, 255, .1)'
+        ctx.globalAlpha = 1
+        ctx.fillRect(minX * size, startY * size, maxX * size - minX * size + size, this.grid.length * size - startY * size + size)
+
         this.blocks.forEach(block => block.draw(ctx, size))
     }
         
     rotate(): void {
+        let newX: number
+        let newY: number
+
+        for (let i = 0; i < this.blocks.length; i++) {
+            newX = this.x - this.blocks[i].y + this.y
+            newY = this.y + this.blocks[i].x - this.x
+            
+            if (newX < 0) {
+                this.moveRight()
+                this.rotate()
+                return
+            } else if (newX > this.grid[0].length - 1) {
+                this.moveLeft()
+                this.rotate()
+                return
+            } else if (newY > this.grid.length - 1) {
+                this.moveUp()
+                this.rotate()
+                return
+            } else if (this.grid[newY][newX] !== null) {
+                return
+            }
+        }
+
         this.blocks.forEach(block => {
             const x = block.x - this.x
             const y = block.y - this.y
@@ -27,26 +61,114 @@ abstract class Tetromino {
         })
     }
 
-    moveLeft(): void { this.x-- }
-    moveRight(): void { this.x++ }
-    moveDown(): void { this.y++ }
-    moveUp(): void { this.y-- }
+    moveLeft(): boolean {
+        for (let i = 0; i < this.blocks.length; i++)
+            if (this.blocks[i].x - 1 < 0 || this.grid[this.blocks[i].y][this.blocks[i].x - 1] !== null)
+                return false
+
+        this.blocks.forEach(block => block.x--)
+        this.x--
+        return true
+    }
+    
+    moveRight(): boolean {
+        for (let i = 0; i < this.blocks.length; i++)
+            if (this.blocks[i].x + 1 >= this.grid[0].length || this.grid[this.blocks[i].y][this.blocks[i].x + 1] !== null)
+                return false
+
+        this.blocks.forEach(block => block.x++)
+        this.x++
+        return true
+    }
+
+    moveDown(): boolean {
+        for (let i = 0; i < this.blocks.length; i++)
+            if (this.blocks[i].y + 1 >= this.grid.length || this.grid[this.blocks[i].y + 1][this.blocks[i].x] !== null)
+                return false
+        
+        this.blocks.forEach(block => block.y++)
+        this.y++
+
+        return true
+    }
+
+    moveUp(): boolean {
+        for (let i = 0; i < this.blocks.length; i++)
+            if (this.blocks[i].y - 1 < 0 || this.grid[this.blocks[i].y - 1][this.blocks[i].x] !== null)
+                return false
+        
+        this.blocks.forEach(block => block.y--)
+        this.y--
+
+        return true
+    }
+
+    hardDrop(): void { while (this.moveDown()); }
+
+    setLocation(x: number, y: number) {
+        this.blocks.forEach(block => {
+            block.x += x - this.x
+            block.y += y - this.y
+        })
+
+        this.x = x
+        this.y = y
+    }
+
+    static random(x: number, y: number, grid: string[][]): Tetromino {
+        const tetrominos = [
+            Straight,
+            Square,
+            TShape,
+            LShapeLeft,
+            LShapeRight,
+            SShapeLeft,
+            SShapeRight
+        ]
+
+        const tetromino = tetrominos[Math.floor(Math.random() * tetrominos.length)]
+        return new tetromino(x, y, grid)
+    }
 }
 
 class Straight extends Tetromino {
     private orientation: number = 0
     
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, grid: string[][]) {
         super(x, y, [
-            new Block(x - 1, y + 0),
-            new Block(x + 0, y + 0),
-            new Block(x + 1, y + 0),
-            new Block(x + 2, y + 0)
-        ], '#0ff')
+            new Block(x - 1, y + 0, '#0ff'),
+            new Block(x + 0, y + 0, '#0ff'),
+            new Block(x + 1, y + 0, '#0ff'),
+            new Block(x + 2, y + 0, '#0ff')
+        ], grid)
     }
 
     rotate(): void {
-        for (let i = 0; i < 4; i++) {
+        let newX: number
+        let newY: number
+
+        for (let i = 0; i < this.blocks.length; i++) {
+            newX = this.blocks[i].x + (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
+            newY = this.blocks[i].y + (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? -1 : 1)
+
+            if (newX < 0) {
+                this.moveRight()
+                this.rotate()
+                return
+            } else if (newX >= this.grid[0].length) {
+                this.moveLeft()
+                this.rotate()
+                return
+            } else if (newY >= this.grid.length) {
+                this.moveUp()
+                this.rotate()
+                return
+            } else if (this.grid[newY][newX] !== null) {
+                return
+            }
+        }
+
+        for (let i = 0; i < this.blocks.length; i++) {
             this.blocks[i].x += (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
             this.blocks[i].y += (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? -1 : 1)
         }
@@ -56,79 +178,115 @@ class Straight extends Tetromino {
 }
 
 class Square extends Tetromino {
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, grid: string[][]) {
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x + 1, y + 0),
-            new Block(x + 0, y + 1),
-            new Block(x + 1, y + 1)
-        ], '#ff0')
+            new Block(x + 0, y + 0, '#ff0'),
+            new Block(x + 1, y + 0, '#ff0'),
+            new Block(x + 0, y + 1, '#ff0'),
+            new Block(x + 1, y + 1, '#ff0')
+        ], grid)
     }
 
     rotate(): void { }
 }
 
 class TShape extends Tetromino {
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x - 1, y + 0),
-            new Block(x + 1, y + 0),
-            new Block(x + 0, y - 1)
-        ], '#90f')
+            new Block(x + 0, y + 0, '#90f'),
+            new Block(x - 1, y + 0, '#90f'),
+            new Block(x + 1, y + 0, '#90f'),
+            new Block(x + 0, y - 1, '#90f')
+        ], grid)
+    }
+
+    setLocation(x: number, y: number) {
+        y += 1
+        super.setLocation(x, y)
     }
 }
 
 class LShapeLeft extends Tetromino {
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x - 1, y + 0),
-            new Block(x - 1, y - 1),
-            new Block(x + 1, y + 0)
-        ], '#00f')
+            new Block(x + 0, y + 0, '#00f'),
+            new Block(x - 1, y + 0, '#00f'),
+            new Block(x - 1, y - 1, '#00f'),
+            new Block(x + 1, y + 0, '#00f')
+        ], grid)
+    }
+
+    setLocation(x: number, y: number) {
+        y += 1
+        super.setLocation(x, y)
     }
 }
 
 class LShapeRight extends Tetromino {
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x + 1, y + 0),
-            new Block(x + 1, y - 1),
-            new Block(x - 1, y + 0)
-        ], '#fa0')
+            new Block(x + 0, y + 0, '#fa0'),
+            new Block(x + 1, y + 0, '#fa0'),
+            new Block(x + 1, y - 1, '#fa0'),
+            new Block(x - 1, y + 0, '#fa0')
+        ], grid)
+    }
+
+    setLocation(x: number, y: number) {
+        y += 1
+        super.setLocation(x, y)
     }
 }
 
-class SkewShapeLeft extends Tetromino {
-    constructor(x: number, y: number) {
+class SShapeLeft extends Tetromino {
+    constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x + 0, y - 1),
-            new Block(x - 1, y - 1),
-            new Block(x + 1, y + 0)
-        ], '#f00')
+            new Block(x + 0, y + 0, '#f00'),
+            new Block(x + 0, y - 1, '#f00'),
+            new Block(x - 1, y - 1, '#f00'),
+            new Block(x + 1, y + 0, '#f00')
+        ], grid)
+    }
+
+    setLocation(x: number, y: number) {
+        y += 1
+        super.setLocation(x, y)
     }
 }
 
-class SkewShapeRight extends Tetromino {
-    constructor(x: number, y: number) {
+class SShapeRight extends Tetromino {
+    constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+
         super(x, y, [
-            new Block(x + 0, y + 0),
-            new Block(x - 1, y + 0),
-            new Block(x + 0, y - 1),
-            new Block(x + 1, y - 1)
-        ], '#0f0')
+            new Block(x + 0, y + 0, '#0f0'),
+            new Block(x - 1, y + 0, '#0f0'),
+            new Block(x + 0, y - 1, '#0f0'),
+            new Block(x + 1, y - 1, '#0f0')
+        ], grid)
+    }
+
+    setLocation(x: number, y: number) {
+        y += 1
+        super.setLocation(x, y)
     }
 }
 
 export {
+    Tetromino,
     Straight,
     Square,
     TShape,
     LShapeLeft,
     LShapeRight,
-    SkewShapeLeft,
-    SkewShapeRight
+    SShapeLeft,
+    SShapeRight
 }
