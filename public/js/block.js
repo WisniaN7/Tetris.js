@@ -12,5 +12,9 @@ class Block {
         ctx.fillStyle = this.color;
         ctx.fillRect(size * this.x, size * this.y, size, size);
     }
+    drawWithOffset(ctx, size, x, y) {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(size * (this.x + x), size * (this.y + y), size, size);
+    }
 }
 export { Block };

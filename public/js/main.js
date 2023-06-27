@@ -14,15 +14,7 @@ piecesQueue.forEach(tetromino => {
     piece.src = `./public/img/${tetromino.constructor.name}.svg`;
     piecesQueueUI.appendChild(piece);
 });
-const interval = setInterval(() => {
-    if (!tetromino.moveDown()) {
-        grid.placeTetromino(tetromino);
-        tetromino = piecesQueue.shift();
-        piecesQueue.push(Tetromino.random(4, 0, grid.Grid));
-        updatePieceQueue();
-        heldPieceCanSwitch = true;
-    }
-}, 500);
+let interval = setInterval(() => tetrominoFall(), 500);
 document.addEventListener('keydown', event => {
     if (event.key == 'ArrowLeft' || event.key == 'a')
         tetromino.moveLeft();
@@ -32,8 +24,12 @@ document.addEventListener('keydown', event => {
         tetromino.rotate();
     if (event.key == 'ArrowDown' || event.key == 's')
         tetromino.moveDown();
-    if (event.key == ' ')
+    if (event.key == ' ') {
         tetromino.hardDrop();
+        clearInterval(interval);
+        tetrominoFall();
+        interval = setInterval(() => tetrominoFall(), 500);
+    }
     if (heldPieceCanSwitch && (event.key == 'Shift' || event.key == 'c')) {
         heldPieceCanSwitch = false;
         if (heldPiece) {
@@ -68,4 +64,13 @@ function updatePieceQueue() {
     const piece = document.createElement('img');
     piece.src = `./public/img/${piecesQueue.at(-1).constructor.name}.svg`;
     piecesQueueUI.appendChild(piece);
+}
+function tetrominoFall() {
+    if (!tetromino.moveDown()) {
+        grid.placeTetromino(tetromino);
+        tetromino = piecesQueue.shift();
+        piecesQueue.push(Tetromino.random(4, 0, grid.Grid));
+        updatePieceQueue();
+        heldPieceCanSwitch = true;
+    }
 }

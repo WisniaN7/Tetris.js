@@ -15,10 +15,29 @@ class Tetromino {
         const coords = this.blocks.map(block => ({ x: block.x, y: block.y }));
         let minX = Math.min(...coords.map(coord => coord.x));
         let maxX = Math.max(...coords.map(coord => coord.x));
-        let startY = Math.max(...coords.map(coord => coord.y));
+        const silcedRows = this.grid.map(row => row.slice(minX, maxX + 1));
+        const columns = silcedRows[0].map((_, colIndex) => silcedRows.map(row => row[colIndex]));
+        const highestFilledCells = columns.map(column => {
+            let index = column.slice(this.y, -1).findIndex(block => block !== null);
+            return index === -1 ? 20 : index + this.y;
+        });
+        let highEstemptyCellIndex = 20;
+        this.blocks.forEach(block => { highEstemptyCellIndex = Math.min(highEstemptyCellIndex, highestFilledCells[block.x - minX] + this.y - block.y - 1); });
+        ctx.globalAlpha = .5;
+        this.blocks.forEach(block => { block.drawWithOffset(ctx, size, 0, highEstemptyCellIndex - this.y); });
+        let startY = [];
+        for (const coord of coords) {
+            if (!startY.find(c => c.x === coord.x))
+                startY.push(coord);
+            else
+                startY = startY.map(c => c.x === coord.x ? (coord.y > c.y ? coord : c) : c);
+        }
+        minX *= size;
+        maxX *= size;
+        highEstemptyCellIndex *= size;
         ctx.fillStyle = 'rgba(255, 255, 255, .1)';
         ctx.globalAlpha = 1;
-        ctx.fillRect(minX * size, startY * size, maxX * size - minX * size + size, this.grid.length * size - startY * size + size);
+        startY.forEach(coord => { ctx.fillRect(coord.x * size, (coord.y + 1) * size, size, highEstemptyCellIndex - ((this.y + 1) * size) + size); });
         this.blocks.forEach(block => block.draw(ctx, size));
     }
     rotate() {

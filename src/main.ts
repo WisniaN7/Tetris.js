@@ -20,16 +20,7 @@ piecesQueue.forEach(tetromino => {
     piecesQueueUI.appendChild(piece)
 })
 
-const interval = setInterval(() => {
-    if (!tetromino.moveDown()) {
-        grid.placeTetromino(tetromino)
-        tetromino = piecesQueue.shift() as Tetromino
-        piecesQueue.push(Tetromino.random(4, 0, grid.Grid))
-
-        updatePieceQueue()
-        heldPieceCanSwitch = true
-    }
-}, 500)
+let interval = setInterval(() => tetrominoFall(), 500)
 
 document.addEventListener('keydown', event => {
     if (event.key == 'ArrowLeft' || event.key == 'a')
@@ -44,8 +35,12 @@ document.addEventListener('keydown', event => {
     if (event.key == 'ArrowDown' || event.key == 's')
         tetromino.moveDown()
 
-    if (event.key == ' ')
+    if (event.key == ' ') {
         tetromino.hardDrop()
+        clearInterval(interval)
+        tetrominoFall()
+        interval = setInterval(() => tetrominoFall(), 500)
+    }
 
     if (heldPieceCanSwitch && (event.key == 'Shift' || event.key == 'c')) {
         heldPieceCanSwitch = false
@@ -87,4 +82,15 @@ function updatePieceQueue() {
     const piece = document.createElement('img')
     piece.src = `./public/img/${piecesQueue.at(-1).constructor.name}.svg`
     piecesQueueUI.appendChild(piece)
+}
+
+function tetrominoFall() {
+    if (!tetromino.moveDown()) {
+        grid.placeTetromino(tetromino)
+        tetromino = piecesQueue.shift() as Tetromino
+        piecesQueue.push(Tetromino.random(4, 0, grid.Grid))
+
+        updatePieceQueue()
+        heldPieceCanSwitch = true
+    }
 }

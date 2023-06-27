@@ -21,6 +21,17 @@ class Block {
             size
         )
     }
+
+    drawWithOffset(ctx: CanvasRenderingContext2D, size: number, x: number, y: number): void {
+        ctx.fillStyle = this.color
+
+        ctx.fillRect(
+            size * (this.x + x),
+            size * (this.y + y),
+            size,
+            size
+        )
+    }
 }
 
 export { Block }
