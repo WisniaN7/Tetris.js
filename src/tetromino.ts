@@ -15,6 +15,7 @@ abstract class Tetromino {
 
     get Blocks(): Block[] { return this.blocks }
     
+    // TODO: clean up 
     draw(ctx: CanvasRenderingContext2D, size: number): void {
         const coords = this.blocks.map(block => ({ x: block.x, y: block.y }))
         let minX = Math.min(...coords.map(coord => coord.x))
@@ -23,9 +24,10 @@ abstract class Tetromino {
         const silcedRows = this.grid.map(row => row.slice(minX, maxX + 1))
         const columns = silcedRows[0].map((_, colIndex) => silcedRows.map(row => row[colIndex]))
         const highestFilledCells = columns.map(column => {
-            let index = column.slice(this.y, -1).findIndex(block => block !== null)
+            let index = column.slice(this.y, column.length).findIndex(block => block !== null)
             return index === -1 ? 20 : index + this.y
         })
+        
 
         let highEstemptyCellIndex = 20
         this.blocks.forEach(block => { highEstemptyCellIndex = Math.min(highEstemptyCellIndex, highestFilledCells[block.x - minX] + this.y - block.y - 1) })
