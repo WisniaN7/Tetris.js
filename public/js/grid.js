@@ -39,16 +39,26 @@ class Grid {
             }
         }));
     }
+    /**
+     * Places a tetromino on the grid
+     * @param tetromino
+     * @returns base number of rows removed
+     */
     placeTetromino(tetromino) {
         tetromino.Blocks.forEach(block => {
             this.grid[block.y][block.x] = block.Color;
         });
-        this.removeFullRows();
+        return this.removeFullRows();
     }
     removeFullRows() {
-        for (let i = 0; i < this.height; i++)
-            if (this.isRowFull(i))
+        let rowsRemoved = 0;
+        for (let i = 0; i < this.height; i++) {
+            if (this.isRowFull(i)) {
                 this.removeRow(i);
+                rowsRemoved++;
+            }
+        }
+        return rowsRemoved;
     }
     removeRow(row) {
         for (let i = 0; i < this.width; i++)

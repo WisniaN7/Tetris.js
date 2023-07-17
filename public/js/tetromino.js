@@ -4,10 +4,15 @@ class Tetromino {
     y;
     blocks;
     grid;
-    constructor(x, y, blocks, grid) {
+    constructor(x, y, coords, color, grid) {
         this.x = x;
         this.y = y;
-        this.blocks = blocks;
+        this.blocks = [
+            new Block(coords[0].x, coords[0].y, color),
+            new Block(coords[1].x, coords[1].y, color),
+            new Block(coords[2].x, coords[2].y, color),
+            new Block(coords[3].x, coords[3].y, color)
+        ];
         this.grid = grid;
     }
     get Blocks() { return this.blocks; }
@@ -41,7 +46,7 @@ class Tetromino {
         startY.forEach(coord => { ctx.fillRect(coord.x * size, (coord.y + 1) * size, size, highEstemptyCellIndex - ((this.y + 1) * size) + size); });
         this.blocks.forEach(block => block.draw(ctx, size));
     }
-    rotate() {
+    rotateClockwise() {
         let newX;
         let newY;
         for (let i = 0; i < this.blocks.length; i++) {
@@ -49,17 +54,17 @@ class Tetromino {
             newY = this.y + this.blocks[i].x - this.x;
             if (newX < 0) {
                 this.moveRight();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (newX > this.grid[0].length - 1) {
                 this.moveLeft();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (newY > this.grid.length - 1) {
                 this.moveUp();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (this.grid[newY][newX] !== null) {
@@ -71,6 +76,38 @@ class Tetromino {
             const y = block.y - this.y;
             block.x = this.x - y;
             block.y = this.y + x;
+        });
+    }
+    rotateCounterClockwise() {
+        let newX;
+        let newY;
+        for (let i = 0; i < this.blocks.length; i++) {
+            newX = this.x + this.blocks[i].y - this.y;
+            newY = this.y - this.blocks[i].x + this.x;
+            if (newX < 0) {
+                this.moveRight();
+                this.rotateCounterClockwise();
+                return;
+            }
+            else if (newX > this.grid[0].length - 1) {
+                this.moveLeft();
+                this.rotateCounterClockwise();
+                return;
+            }
+            else if (newY > this.grid.length - 1) {
+                this.moveUp();
+                this.rotateCounterClockwise();
+                return;
+            }
+            else if (this.grid[newY][newX] !== null) {
+                return;
+            }
+        }
+        this.blocks.forEach(block => {
+            const x = block.x - this.x;
+            const y = block.y - this.y;
+            block.x = this.x + y;
+            block.y = this.y - x;
         });
     }
     moveLeft() {
@@ -105,8 +142,12 @@ class Tetromino {
         this.y--;
         return true;
     }
-    hardDrop() { while (this.moveDown())
-        ; }
+    hardDrop() {
+        let cellsMoved = 0;
+        while (this.moveDown())
+            cellsMoved++;
+        return cellsMoved;
+    }
     setLocation(x, y) {
         this.blocks.forEach(block => {
             block.x += x - this.x;
@@ -117,29 +158,30 @@ class Tetromino {
     }
     static random(x, y, grid) {
         const tetrominos = [
-            Straight,
-            Square,
+            IShape,
+            OShape,
             TShape,
-            LShapeLeft,
-            LShapeRight,
-            SShapeLeft,
-            SShapeRight
+            JShape,
+            LShape,
+            ZShape,
+            SShape
         ];
         const tetromino = tetrominos[Math.floor(Math.random() * tetrominos.length)];
         return new tetromino(x, y, grid);
     }
 }
-class Straight extends Tetromino {
+class IShape extends Tetromino {
     orientation = 0;
     constructor(x, y, grid) {
-        super(x, y, [
-            new Block(x - 1, y + 0, '#0ff'),
-            new Block(x + 0, y + 0, '#0ff'),
-            new Block(x + 1, y + 0, '#0ff'),
-            new Block(x + 2, y + 0, '#0ff')
-        ], grid);
+        const coords = [
+            { x: x - 1, y: y + 0 },
+            { x: x + 0, y: y + 0 },
+            { x: x + 1, y: y + 0 },
+            { x: x + 2, y: y + 0 }
+        ];
+        super(x, y, coords, '#0ff', grid);
     }
-    rotate() {
+    rotateClockwise() {
         let newX;
         let newY;
         for (let i = 0; i < this.blocks.length; i++) {
@@ -147,17 +189,17 @@ class Straight extends Tetromino {
             newY = this.blocks[i].y + (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? -1 : 1);
             if (newX < 0) {
                 this.moveRight();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (newX >= this.grid[0].length) {
                 this.moveLeft();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (newY >= this.grid.length) {
                 this.moveUp();
-                this.rotate();
+                this.rotateClockwise();
                 return;
             }
             else if (this.grid[newY][newX] !== null) {
@@ -171,90 +213,97 @@ class Straight extends Tetromino {
         this.orientation = (this.orientation + 1) % 4;
     }
 }
-class Square extends Tetromino {
+class OShape extends Tetromino {
     constructor(x, y, grid) {
-        super(x, y, [
-            new Block(x + 0, y + 0, '#ff0'),
-            new Block(x + 1, y + 0, '#ff0'),
-            new Block(x + 0, y + 1, '#ff0'),
-            new Block(x + 1, y + 1, '#ff0')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x + 1, y: y + 0 },
+            { x: x + 0, y: y + 1 },
+            { x: x + 1, y: y + 1 }
+        ];
+        super(x, y, coords, '#ff0', grid);
     }
-    rotate() { }
+    rotateClockwise() { }
+    rotateCounterClockwise() { }
 }
 class TShape extends Tetromino {
     constructor(x, y, grid) {
         y += 1;
-        super(x, y, [
-            new Block(x + 0, y + 0, '#90f'),
-            new Block(x - 1, y + 0, '#90f'),
-            new Block(x + 1, y + 0, '#90f'),
-            new Block(x + 0, y - 1, '#90f')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x - 1, y: y + 0 },
+            { x: x + 1, y: y + 0 },
+            { x: x + 0, y: y - 1 }
+        ];
+        super(x, y, coords, '#90f', grid);
     }
     setLocation(x, y) {
         y += 1;
         super.setLocation(x, y);
     }
 }
-class LShapeLeft extends Tetromino {
+class JShape extends Tetromino {
     constructor(x, y, grid) {
         y += 1;
-        super(x, y, [
-            new Block(x + 0, y + 0, '#00f'),
-            new Block(x - 1, y + 0, '#00f'),
-            new Block(x - 1, y - 1, '#00f'),
-            new Block(x + 1, y + 0, '#00f')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x - 1, y: y + 0 },
+            { x: x - 1, y: y - 1 },
+            { x: x + 1, y: y + 0 }
+        ];
+        super(x, y, coords, '#00f', grid);
     }
     setLocation(x, y) {
         y += 1;
         super.setLocation(x, y);
     }
 }
-class LShapeRight extends Tetromino {
+class LShape extends Tetromino {
     constructor(x, y, grid) {
         y += 1;
-        super(x, y, [
-            new Block(x + 0, y + 0, '#fa0'),
-            new Block(x + 1, y + 0, '#fa0'),
-            new Block(x + 1, y - 1, '#fa0'),
-            new Block(x - 1, y + 0, '#fa0')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x + 1, y: y + 0 },
+            { x: x + 1, y: y - 1 },
+            { x: x - 1, y: y + 0 }
+        ];
+        super(x, y, coords, '#fa0', grid);
     }
     setLocation(x, y) {
         y += 1;
         super.setLocation(x, y);
     }
 }
-class SShapeLeft extends Tetromino {
+class ZShape extends Tetromino {
     constructor(x, y, grid) {
         y += 1;
-        super(x, y, [
-            new Block(x + 0, y + 0, '#f00'),
-            new Block(x + 0, y - 1, '#f00'),
-            new Block(x - 1, y - 1, '#f00'),
-            new Block(x + 1, y + 0, '#f00')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x + 0, y: y - 1 },
+            { x: x - 1, y: y - 1 },
+            { x: x + 1, y: y + 0 }
+        ];
+        super(x, y, coords, '#f00', grid);
     }
     setLocation(x, y) {
         y += 1;
         super.setLocation(x, y);
     }
 }
-class SShapeRight extends Tetromino {
+class SShape extends Tetromino {
     constructor(x, y, grid) {
         y += 1;
-        super(x, y, [
-            new Block(x + 0, y + 0, '#0f0'),
-            new Block(x - 1, y + 0, '#0f0'),
-            new Block(x + 0, y - 1, '#0f0'),
-            new Block(x + 1, y - 1, '#0f0')
-        ], grid);
+        const coords = [
+            { x: x + 0, y: y + 0 },
+            { x: x - 1, y: y + 0 },
+            { x: x + 0, y: y - 1 },
+            { x: x + 1, y: y - 1 }
+        ];
+        super(x, y, coords, '#0f0', grid);
     }
     setLocation(x, y) {
         y += 1;
         super.setLocation(x, y);
     }
 }
-export { Tetromino, Straight, Square, TShape, LShapeLeft, LShapeRight, SShapeLeft, SShapeRight };
+export { Tetromino, IShape, OShape, TShape, JShape, LShape, ZShape, SShape };

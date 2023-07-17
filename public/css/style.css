@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Tektur&display=swap');
+
 body {
     height: 100vh;
     margin: 0;
@@ -13,9 +15,13 @@ canvas {
 aside {
     width: 20vh;
     height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
     padding: 0 50px;
 
-    > div {
+    > div:first-of-type {
         width: 100%;
         box-sizing: border-box;
         background: repeating-linear-gradient(45deg, #222, #222 10px, #333 10px, #333 20px);
@@ -38,6 +44,22 @@ aside {
 
         & img {
             aspect-ratio: 1/1;
+        }
+    }
+    
+    & #stats {
+        margin-bottom: 20px;
+        font-family: 'Tektur', sans-serif;
+
+        & div {
+            margin-bottom: 5px;
+            
+            & h1,
+            & p {
+                font-size: 1.5em;
+                text-align: center;
+                margin: auto;
+            }
         }
     }
 }

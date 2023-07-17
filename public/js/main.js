@@ -1,34 +1,45 @@
 import { Grid } from './grid.js';
 import { Tetromino } from './tetromino.js';
+import { PiecesQueue } from './piecesQueue.js';
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
+let score = 0;
+let level = 1;
+let linesCleared = 0;
+const clearedLinesToPoints = [0, 100, 300, 500, 800];
+let combo = 0;
 const grid = new Grid(canvas);
 let tetromino = Tetromino.random(4, 0, grid.Grid);
-const piecesQueue = [Tetromino.random(4, 0, grid.Grid), Tetromino.random(4, 0, grid.Grid), Tetromino.random(4, 0, grid.Grid), Tetromino.random(4, 0, grid.Grid)];
 const piecesQueueUI = document.querySelector('#piecesQueue');
+const piecesQueue = new PiecesQueue(piecesQueueUI, grid.Grid);
 let heldPiece;
 const heldPieceUI = document.querySelector('#hold');
 let heldPieceCanSwitch = true;
-piecesQueue.forEach(tetromino => {
-    const piece = document.createElement('img');
-    piece.src = `./public/img/${tetromino.constructor.name}.svg`;
-    piecesQueueUI.appendChild(piece);
-});
-let interval = setInterval(() => tetrominoFall(), 500);
+const scoreUI = document.querySelector('#score p');
+const linesClearedUI = document.querySelector('#lines p');
+const levelUI = document.querySelector('#level p');
+let fallInterval = setInterval(() => tetrominoFall(), 500);
+// TODO: Refactor this
 document.addEventListener('keydown', event => {
     if (event.key == 'ArrowLeft' || event.key == 'a')
         tetromino.moveLeft();
     if (event.key == 'ArrowRight' || event.key == 'd')
         tetromino.moveRight();
     if (event.key == 'ArrowUp' || event.key == 'w' || event.key == 'r')
-        tetromino.rotate();
-    if (event.key == 'ArrowDown' || event.key == 's')
-        tetromino.moveDown();
+        tetromino.rotateClockwise();
+    if (event.key == 'z' || event.key == 'Control')
+        tetromino.rotateCounterClockwise();
+    if (event.key == 'ArrowDown' || event.key == 's') {
+        if (tetromino.moveDown()) {
+            score++;
+            scoreUI.textContent = score.toString();
+        }
+    }
     if (event.key == ' ') {
-        tetromino.hardDrop();
-        clearInterval(interval);
+        score += tetromino.hardDrop() * 2;
+        clearInterval(fallInterval);
         tetrominoFall();
-        interval = setInterval(() => tetrominoFall(), 500);
+        fallInterval = setInterval(() => tetrominoFall(), 500);
     }
     if (heldPieceCanSwitch && (event.key == 'Shift' || event.key == 'c')) {
         heldPieceCanSwitch = false;
@@ -42,8 +53,6 @@ document.addEventListener('keydown', event => {
         else {
             heldPiece = tetromino;
             tetromino = piecesQueue.shift();
-            piecesQueue.push(Tetromino.random(4, 0, grid.Grid));
-            updatePieceQueue();
         }
         const piece = document.createElement('img');
         piece.src = `./public/img/${heldPiece.constructor.name}.svg`;
@@ -59,18 +68,20 @@ const gameLoop = () => {
     grid.draw(canvas);
 };
 gameLoop();
-function updatePieceQueue() {
-    piecesQueueUI.removeChild(piecesQueueUI.querySelector('img'));
-    const piece = document.createElement('img');
-    piece.src = `./public/img/${piecesQueue.at(-1).constructor.name}.svg`;
-    piecesQueueUI.appendChild(piece);
-}
 function tetrominoFall() {
     if (!tetromino.moveDown()) {
-        grid.placeTetromino(tetromino);
+        const rowsRemoved = grid.placeTetromino(tetromino);
+        linesCleared += rowsRemoved;
+        linesClearedUI.textContent = linesCleared.toString();
+        score += clearedLinesToPoints[rowsRemoved] * level;
+        scoreUI.textContent = score.toString();
         tetromino = piecesQueue.shift();
-        piecesQueue.push(Tetromino.random(4, 0, grid.Grid));
-        updatePieceQueue();
+        tetromino.Blocks.forEach(block => {
+            if (grid.Grid[block.y][block.x]) {
+                clearInterval(fallInterval);
+                console.log('Game Over');
+            }
+        });
         heldPieceCanSwitch = true;
     }
 }
