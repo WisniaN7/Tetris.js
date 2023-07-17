@@ -209,6 +209,8 @@ class IShape extends Tetromino {
     private orientation: number = 0
     
     constructor(x: number, y: number, grid: string[][]) {
+        y += 1
+        
         const coords = [
             { x: x - 1, y: y + 0 },
             { x: x + 0, y: y + 0 },
@@ -220,12 +222,9 @@ class IShape extends Tetromino {
     }
 
     rotateClockwise(): void {
-        let newX: number
-        let newY: number
-
         for (let i = 0; i < this.blocks.length; i++) {
-            newX = this.blocks[i].x + (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
-            newY = this.blocks[i].y + (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? -1 : 1)
+            const newX = this.blocks[i].x + (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
+            const newY = this.blocks[i].y + (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? -1 : 1)
 
             if (newX < 0) {
                 this.moveRight()
@@ -251,6 +250,58 @@ class IShape extends Tetromino {
 
         this.orientation = (this.orientation + 1) % 4
     }
+
+    rotateCounterClockwise(): void {
+        for (let i = 0; i < this.blocks.length; i++) {
+            const newX = this.blocks[i].x + (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? 1 : -1)
+            const newY = this.blocks[i].y + (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
+
+            if (newX < 0) {
+                this.moveRight()
+                this.rotateCounterClockwise()
+                return
+            } else if (newX >= this.grid[0].length) {
+                this.moveLeft()
+                this.rotateCounterClockwise()
+                return
+            } else if (newY >= this.grid.length) {
+                this.moveUp()
+                this.rotateCounterClockwise()
+                return
+            } else if (this.grid[newY][newX] !== null) {
+                return
+            }
+        }
+
+        for (let i = 0; i < this.blocks.length; i++) {
+            this.blocks[i].x += (this.orientation % 2 === 1 ? 2 - i : 1 - i) * (this.orientation === 0 || this.orientation === 3 ? 1 : -1)
+            this.blocks[i].y += (this.orientation % 2 === 0 ? 2 - i : 1 - i) * (this.orientation < 2 ? 1 : -1)
+        }
+
+        this.orientation = (this.orientation + 4 - 1) % 4                
+    }
+
+
+    /*
+        [
+            [1, 2]
+            [2, -1]
+            [-1, -2]
+            [-2, 1]
+        ]
+        [
+            [0, 1]
+            [1, 0]
+            [0, -1]
+            [-1, 0]
+        ]
+        [
+            [-1, 0]
+            [0, 1]
+            [1, 0]
+            [-1, -1]
+        ]
+    */
 }
 
 class OShape extends Tetromino {

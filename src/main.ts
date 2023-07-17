@@ -6,16 +6,18 @@ const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 
 let score = 0
-let level = 1
+let level = 0
+let fallDelay = (48 / 60) * 1000
 let linesCleared = 0
 const clearedLinesToPoints = [ 0, 100, 300, 500, 800 ]
 let combo = 0
 
 const grid = new Grid(canvas)
-let tetromino = Tetromino.random(4, 0, grid.Grid)
 
 const piecesQueueUI = document.querySelector('#piecesQueue') as HTMLElement
 const piecesQueue = new PiecesQueue(piecesQueueUI, grid.Grid)
+
+let tetromino = piecesQueue.shift()
 
 let heldPiece: Tetromino
 const heldPieceUI = document.querySelector('#hold')
@@ -25,7 +27,7 @@ const scoreUI = document.querySelector('#score p')
 const linesClearedUI = document.querySelector('#lines p')
 const levelUI = document.querySelector('#level p')
 
-let fallInterval = setInterval(() => tetrominoFall(), 500)
+let fallInterval = setInterval(() => tetrominoFall(), fallDelay)
 
 // TODO: Refactor this
 document.addEventListener('keydown', event => {
@@ -52,7 +54,7 @@ document.addEventListener('keydown', event => {
         score += tetromino.hardDrop() * 2
         clearInterval(fallInterval)
         tetrominoFall()
-        fallInterval = setInterval(() => tetrominoFall(), 500)
+        fallInterval = setInterval(() => tetrominoFall(), fallDelay)
     }
 
     if (heldPieceCanSwitch && (event.key == 'Shift' || event.key == 'c')) {
